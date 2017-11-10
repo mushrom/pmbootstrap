@@ -1,4 +1,4 @@
-#!/sbin/ash
+#!/sbin/sh
 # shellcheck shell=dash
 
 # Copyright 2017 Attila Szöllősi
