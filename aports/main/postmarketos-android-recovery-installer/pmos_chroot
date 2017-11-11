@@ -22,8 +22,9 @@ fi
 # Mount pmos.zip and recovery.fstab, so we can access them inside the chroot
 touch "$CHROOT"/pmos.zip
 mount --bind "$ZIP" "$CHROOT"/pmos.zip
-mount --bind /etc/recovery.fstab "$CHROOT"/recovery.fstab || \
-	[ "$?" = '255' ] && echo 'recovery.fstab not found, continuing...' || return "$?"
+touch "$CHROOT"/recovery.fstab
+mount --bind /etc/recovery.fstab "$CHROOT"/recovery.fstab || {
+	[ "$?" = '255' ] && echo 'recovery.fstab not found, continuing...' || return "$?" ; }
 
 # Mount necessary filesystems for the chroot
 for mountpoint in "/dev" "/proc" "/sys"
