@@ -1,7 +1,7 @@
 #!/bin/busybox ash
-# shellcheck shell=dash
+# shellcheck shell=sh
 
-# Copyright 2017 Attila Szöllősi
+# Copyright 2017 Attila Szollosi
 #
 # This file is part of postmarketos-android-recovery-installer.
 #
@@ -18,18 +18,13 @@
 # You should have received a copy of the GNU General Public License
 # along with postmarketos-android-recovery-installer.  If not, see <http://www.gnu.org/licenses/>.
 
-/bin/busybox --install /bin
+exec > /pmos.log 2>&1
+set -ex
 
-export PATH="/bin"
-export LD_LIBRARY_PATH="/lib"
+/bin/busybox --install /bin
 
 # shellcheck source=pmos_install_functions
 . /bin/pmos_install_functions
-# shellcheck source=/dev/null
-. /install_options
-
-exec > /pmos.log 2>&1
-set -ex
 
 ui_print "                                         "
 ui_print "                    8                    "
@@ -66,14 +61,14 @@ umount_install_partition
 ui_print "Creating partition table on $INSTALL_DEVICE..."
 # parted returns nonzero even when command executed successfully
 partition_install_device || :
-
+ui_print "Creating mountpoint..."
 mkdir -p /mnt/pmOS
 
 if [ "$FDE" = "true" ]
 then
 	[ -e /dev/mapper/pm_crypt ] && cryptsetup close pm_crypt
 	ui_print "Generating temporary keyfile with random data..."
-	busybox dd bs=512 count=4 if=/dev/urandom of=/lukskey
+	dd bs=512 count=4 if=/dev/urandom of=/lukskey
 	ui_print "Initializing LUKS device..."
 	cryptsetup luksFormat --use-urandom -c "$CIPHER" -q "$ROOT_PARTITION" /lukskey
 	ui_print "Opening LUKS partition..."
@@ -99,19 +94,19 @@ mount -t ext2 -rw "$PMOS_BOOT" /mnt/pmOS/boot || {
 	mount -t ext4 -rw "$PMOS_BOOT" /mnt/pmOS/boot
 }
 ui_print "Installing rootfs..."
-busybox unzip -p pmos.zip rootfs.tar.gz | busybox tar -xz -C /mnt/pmOS
+unzip -p pmos.zip rootfs.tar.gz | tar -xz -C /mnt/pmOS
 if [ "$FLASH_KERNEL" = "true" ]
 then
 	if [ "$ISOREC" = "true" ]
 	then
 		ui_print "Flashing kernel..."
-		busybox dd if=/mnt/pmOS/boot/vmlinuz-"$FLAVOR" of="$KERNEL_PARTITION"
+		dd if=/mnt/pmOS/boot/vmlinuz-"$FLAVOR" of="$KERNEL_PARTITION"
 		ui_print "Flashing initfs..."
-		busybox gunzip -c /mnt/pmOS/boot/initramfs-"$FLAVOR" | busybox lzop \
+		gunzip -c /mnt/pmOS/boot/initramfs-"$FLAVOR" | lzop \
 			> "$INITFS_PARTITION"
 	else
 		ui_print "Flashing boot.img..."
-		busybox dd if=/mnt/pmOS/boot/boot.img-"$FLAVOR" of="$BOOT_PARTITION"
+		dd if=/mnt/pmOS/boot/boot.img-"$FLAVOR" of="$BOOT_PARTITION"
 	fi
 fi
 if [ "$FDE" = "true" ]

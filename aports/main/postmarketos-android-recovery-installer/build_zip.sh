@@ -1,7 +1,6 @@
-#!/bin/ash
-# shellcheck shell=dash
+#!/bin/sh
 
-# Copyright 2017 Attila Szöllősi
+# Copyright 2017 Attila Szollosi
 #
 # This file is part of postmarketos-android-recovery-installer.
 #
