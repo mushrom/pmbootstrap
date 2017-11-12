@@ -5,7 +5,7 @@ set -ex
 export CHROOT='/tmp/postmarketos/chroot'
 
 # Extract chroot
-unzip "$ZIP" chroot/* -d /tmp/postmarketos
+unzip -o "$ZIP" chroot/* -d /tmp/postmarketos
 
 # shellcheck source=/dev/null
 . "$CHROOT"/install_options
@@ -20,6 +20,7 @@ then
 fi
 
 # Mount pmos.zip so we can access it inside the chroot
+{ umount "$CHROOT"/pmos.zip ; rm "$CHROOT"/pmos.zip ; } || :
 touch "$CHROOT"/pmos.zip
 mount --bind "$ZIP" "$CHROOT"/pmos.zip
 
