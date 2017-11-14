@@ -1,0 +1,86 @@
+# Kernel config based on: arch/arm/configs/(CHANGEME!)
+
+pkgname="linux-htc-speedy"
+pkgver=2.6.35
+pkgrel=0
+pkgdesc="HTC Evo Shift 4G kernel fork"
+arch="armhf"
+_carch="arm"
+_flavor="htc-speedy"
+url="https://kernel.org"
+license="GPL2"
+options="!strip !check !tracedeps"
+makedepends="perl sed installkernel bash gmp-dev bc linux-headers elfutils-dev"
+HOSTCC="${CC:-gcc}"
+HOSTCC="${HOSTCC#${CROSS_COMPILE}}"
+
+# Source
+_repository="htc-kernel-msm7x30"
+#_commit="0c0c519995ad5324642085a0b617d79681b4f6ac"
+_commit="6aee6d5c6f40e13536b0828d265701fe2a5cca2b"
+#_repository="android_kernel_htc_msm7x30-3.0"
+#_commit="234cb7e34ad805511fd653610607ab984551d526"
+_config="config-${_flavor}.${arch}"
+#	$pkgname-$_commit.tar.gz::https://github.com/Evervolv/${_repository}/archive/${_commit}.tar.gz
+	#03_android_paranoid_caps_fix.patch
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/aeroevan/${_repository}/archive/${_commit}.tar.gz
+	$_config
+	compiler-gcc6.h
+	03_perl-fix.patch
+"
+builddir="$srcdir/${_repository}-${_commit}"
+
+prepare() {
+	default_prepare
+
+	# gcc6 support
+	cp -v "$srcdir/compiler-gcc6.h" "$builddir/include/linux/"
+
+	# Remove -Werror from all makefiles
+	find . -type f -name Makefile -print0 | \
+		xargs -0 sed -i 's/-Werror-/-W/g'
+	find . -type f -name Makefile -print0 | \
+		xargs -0 sed -i 's/-Werror//g'
+
+	# Prepare kernel config ('yes ""' for kernels lacking olddefconfig)
+	cp "$srcdir"/$_config "$builddir"/.config
+	yes "" | make ARCH="$_carch" HOSTCC="$HOSTCC" oldconfig
+}
+
+menuconfig() {
+	cd "$builddir"
+	make ARCH="$_carch" menuconfig
+	cp .config "$startdir"/$_config
+}
+
+build() {
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+}
+
+package() {
+	# kernel.release
+	install -D "$builddir/include/config/kernel.release" \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+
+	# zImage (find the right one)
+	cd "$builddir/arch/$_carch/boot"
+	_target="$pkgdir/boot/vmlinuz-$_flavor"
+	for _zimg in zImage-dtb Image.gz-dtb *zImage Image; do
+		[ -e "$_zimg" ] || continue
+		msg "zImage found: $_zimg"
+		install -Dm644 "$_zimg" "$_target"
+		break
+	done
+	if ! [ -e "$_target" ]; then
+		error "Could not find zImage in $PWD!"
+		return 1
+	fi
+}
+
+sha512sums="2cfae9d8ae0865fd7349a3e9246eb8a496a7c7642e7d3a7f5466496773ea60dc4d8ed15c10e1a2f82cd0b7781a7d27842d330e2008b1da7995a17d8839a2ae4c  linux-htc-speedy-6aee6d5c6f40e13536b0828d265701fe2a5cca2b.tar.gz
+718421cdc71341fbaa68a61d8b22dd028632ce4c870291cf924840bba15ab5951e8142f5d17324233226d3161512bdab241d7dfdf06f59b12678692eaedc8cc5  config-htc-speedy.armhf
+3fe126595146627cd059250dc564a8b48681121e8e3df9986ac41208a5fa78e236e352ef431772d88a6ba7223af48bd11e5e54140c0f52db037c1559a7e42e06  compiler-gcc6.h
+88f5b9341839cae62940330f5cb822f363ddca5773555b6bd7b19d380e329c128fe878ebd9233dd1aafc931fb1c1839fbe327fd7d623265fba51a782928cbcdf  03_perl-fix.patch"

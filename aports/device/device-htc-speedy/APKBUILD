@@ -1,0 +1,17 @@
+pkgname="device-htc-speedy"
+pkgdesc="HTC Evo Shift 4G"
+pkgver=0.1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="noarch"
+options="!check"
+depends="linux-htc-speedy mkbootimg"
+source="deviceinfo"
+
+package() {
+	install -Dm644 "$srcdir"/deviceinfo \
+		"$pkgdir"/etc/deviceinfo
+}
+
+sha512sums="4ac69fa26376e0b82c744e22fd5fa9793602142fe81bc647d4676c04c47b64fc00269872a96b0ecb8a813944c8e4cb2d6fa7627764c1d70bc123bf1dbf121d69  deviceinfo"
